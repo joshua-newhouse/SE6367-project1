@@ -1,8 +1,8 @@
 color flavor humor 		labor neighbor
-analyze paralyze
+analyze;-#paralyze
 	
 traveling traveler
-maneuver 
+$522maneuver100
 
 	defense offense pretense     
 
