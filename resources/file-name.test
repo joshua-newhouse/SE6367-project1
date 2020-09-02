@@ -1,17 +1,3 @@
-../resources/british-words.txt: colour
-../resources/british-words.txt: flavour
-../resources/british-words.txt: humour
-../resources/british-words.txt: labour
-../resources/british-words.txt: neighbour
-../resources/british-words.txt: analyse
-../resources/british-words.txt: paralyse
-../resources/british-words.txt: travelling
-../resources/british-words.txt: traveller
-../resources/british-words.txt: manoeuvre
-../resources/british-words.txt: defence
-../resources/british-words.txt: offence
-../resources/british-words.txt: pretence
-../resources/british-words.txt: centre
 ../resources/madeup-dictionary.txt: kwyjibo
 ../resources/madeup-dictionary.txt: zas
 ../resources/madeup-dictionary.txt: za

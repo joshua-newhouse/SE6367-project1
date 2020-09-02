@@ -12,10 +12,10 @@ FailureMessage='eval echo -e "${T_RED}$(date +"%Y-%m-%d %T") [FAILURE] - ${FUNCN
 function Test1() {
     return 1
 }
-TEST_CASES+=("Test1")
+TEST_CASES["T001"]="Test1"
 
 function Test2() {
     return 0
 }
-TEST_CASES+=("Test2")
+TEST_CASES["T002"]="Test2"
 
