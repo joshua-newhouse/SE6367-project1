@@ -15,21 +15,80 @@ SPELL_EXE="${1}"
     $ErrMessage "Cannot find executable 'spell' at specified path: ${SPELL_EXE}.  Verify the path and make sure it is executable." &&
     exit 1
 
-# Test cases
+# Utility functions
+
+function VerifyLongAndShort() {
+    local longOutput="${1}"
+    local shortOutput="${2}"
+
+    local returnCode=0
+
+    [[ "${shortOutput}" != "${longOutput}" ]] &&
+        returnCode=1 &&
+        $ErrMessage "Short option output does not equal long option output, short: ${shortOutput}, long: ${longOutput}"
+
+    return ${returnCode}
+}
+
+function VerifyNotEmpty() {
+    local longOutput="${1}"
+    local shortOutput="${2}"
+
+    local returnCode=0
+
+    if [[ -z "${longOutput}" ]] || [[ -z "${shortOutput}" ]]; then
+        $ErrMessage "One of the outputs is empty"
+        ((returnCode += $?))
+    fi
+
+    VerifyLongAndShort "${longOutput}" "${shortOutput}"
+    ((returnCode += $?))
+
+    return ${returnCode}
+}
+
+function VerifyExpectedVsActualCounts() {
+    local expected=${1}
+    local actual=${2}
+
+    local returnCode=0
+
+    [[ ${expected} -ne ${actual} ]] &&
+        returnCode=1 &&
+        $ErrMessage "Expected: ${expected} / Actual: ${actual}"
+
+    return ${returnCode}
+}
+
+function VerifyExpectedVsActualStrings() {
+    local expected="${1}"
+    local actual="${2}"
+
+    local returnCode=0
+
+    [[ "${expected}" != "${actual}" ]] &&
+        returnCode=1 &&
+        $ErrMessage "Expected: ${expected} / Actual: ${actual}"
+
+    return ${returnCode}
+}
+
+##########################################
+############### TEST CASES ###############
+##########################################
 
 # T001
 function testPrintISpellVersion() {
     local returnCode=0
 
-    local ispellVersion="$("${SPELL_EXE}" -I)"
-    local ispellVersionLong="$("${SPELL_EXE}" --ispell-version)"
+    local ispellVersion="$(${SPELL_EXE} -I)"
+    ((returnCode += $?))
 
-    if [[ -z "${ispellVersion}" ]] ||
-        [[ -z "${ispellVersionLong}" ]] || 
-        [[ "${ispellVersion}" != "${ispellVersionLong}" ]]; then
+    local ispellVersionLong="$(${SPELL_EXE} --ispell-version)"
+    ((returnCode += $?))
 
-        returnCode=1
-    fi
+    VerifyNotEmpty "${ispellVersionLong}" "${ispellVersion}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -39,15 +98,14 @@ TEST_CASES["T001"]="testPrintISpellVersion"
 function testPrintSpellVersion() {
     local returnCode=0
 
-    local spellVersion="$("${SPELL_EXE}" -V 2>&1)"
-    local spellVersionLong="$("${SPELL_EXE}" --version 2>&1)"
+    local spellVersion="$(${SPELL_EXE} -V 2>&1)"
+    ((returnCode += $?))
 
-    if [[ -z "${spellVersion}" ]] ||
-        [[ -z "${spellVersionLong}" ]] || 
-        [[ "${spellVersion}" != "${spellVersionLong}" ]]; then
+    local spellVersionLong="$(${SPELL_EXE} --version 2>&1)"
+    ((returnCode += $?))
 
-        returnCode=1
-    fi
+    VerifyNotEmpty "${spellVersionLong}" "${spellVersion}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -57,15 +115,14 @@ TEST_CASES["T002"]="testPrintSpellVersion"
 function testPrintHelp() {
     local returnCode=0
 
-    local help="$("${SPELL_EXE}" -h 2>&1)"
-    local helpLong="$("${SPELL_EXE}" --help 2>&1)"
+    local help="$(${SPELL_EXE} -h 2>&1)"
+    ((returnCode += $?))
 
-    if [[ -z "${help}" ]] ||
-        [[ -z "${helpLong}" ]] || 
-        [[ "${help}" != "${helpLong}" ]]; then
+    local helpLong="$(${SPELL_EXE} --help 2>&1)"
+    ((returnCode += $?))
 
-        returnCode=1
-    fi
+    VerifyNotEmpty "${helpLong}" "${help}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -75,14 +132,16 @@ TEST_CASES["T003"]="testPrintHelp"
 function testAmericanWordsWithAmericanDictionary() {
     local returnCode=0
 
+    local misspelledWords="$(${SPELL_EXE} ${AMERICAN_TXT})"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)"
+
     local expectedMisspelledWords=0
-    local misspelledWords="$("${SPELL_EXE}" ${AMERICAN_TXT} | xargs)"
     local actualMisspelledWords="$(echo ${misspelledWords} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -92,20 +151,22 @@ TEST_CASES["T004"]="testAmericanWordsWithAmericanDictionary"
 function testAmericanWordsWithBritishDictionary() {
     local returnCode=0
 
-    local misspelledWordsShort="$("${SPELL_EXE}" -b ${AMERICAN_TXT} | xargs)"
-    local misspelledWordsLong="$("${SPELL_EXE}" --british ${AMERICAN_TXT} | xargs)"
+    local misspelledWordsShort="$(${SPELL_EXE} -b ${AMERICAN_TXT})"
+    ((returnCode += $?))
 
-    [[ "${misspelledWordsShort}" != "${misspelledWordsLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${misspelledWordsShort}, long: ${misspelledWordsLong}"
-        
+    local misspelledWordsLong="$(${SPELL_EXE} --british ${AMERICAN_TXT})"
+    ((returnCode += $?))
+
+    VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -115,14 +176,16 @@ TEST_CASES["T005"]="testAmericanWordsWithBritishDictionary"
 function testBritishWordsWithAmericanDictionary() {
     local returnCode=0
 
+    local misspelledWords="$(${SPELL_EXE} ${BRITISH_TXT})"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)"
+
     local expectedMisspelledWords=14
-    local misspelledWords="$("${SPELL_EXE}" ${BRITISH_TXT} | xargs)"
     local actualMisspelledWords="$(echo ${misspelledWords} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -132,20 +195,22 @@ TEST_CASES["T006"]="testBritishWordsWithAmericanDictionary"
 function testBritishWordsWithBritishDictionary() {
     local returnCode=0
 
-    local misspelledWordsShort="$("${SPELL_EXE}" -b ${BRITISH_TXT} | xargs)"
-    local misspelledWordsLong="$("${SPELL_EXE}" --british ${BRITISH_TXT} | xargs)"
+    local misspelledWordsShort="$(${SPELL_EXE} -b ${BRITISH_TXT})"
+    ((returnCode += $?))
 
-    [[ "${misspelledWordsShort}" != "${misspelledWordsLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${misspelledWordsShort}, long: ${misspelledWordsLong}"
-        
+    local misspelledWordsLong="$(${SPELL_EXE} --british ${BRITISH_TXT})"
+    ((returnCode += $?))
+
+    VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+
     local expectedMisspelledWords=0
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -155,20 +220,22 @@ TEST_CASES["T007"]="testBritishWordsWithBritishDictionary"
 function testMadeUpWordsInSpecifiedDictionary() {
     local returnCode=0
 
-    local misspelledWordsShort="$("${SPELL_EXE}" -d ${MADEUP_DIC} ${MADEUP_TXT} | xargs)"
-    local misspelledWordsLong="$("${SPELL_EXE}" --dictionary=${MADEUP_DIC} ${MADEUP_TXT} | xargs)"
+    local misspelledWordsShort="$(${SPELL_EXE} -d ${MADEUP_DIC} ${MADEUP_TXT})"
+    ((returnCode += $?))
 
-    [[ "${misspelledWordsShort}" != "${misspelledWordsLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${misspelledWordsShort}, long: ${misspelledWordsLong}"
-        
+    local misspelledWordsLong="$(${SPELL_EXE} --dictionary=${MADEUP_DIC} ${MADEUP_TXT})"
+    ((returnCode += $?))
+
+    VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+
     local expectedMisspelledWords=1
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -178,20 +245,22 @@ TEST_CASES["T008"]="testMadeUpWordsInSpecifiedDictionary"
 function testCorrectWordsInSpecifiedNamedDictionary() {
     local returnCode=0
 
-    local misspelledWordsShort="$("${SPELL_EXE}" -D british ${BRITISH_TXT} | xargs)"
-    local misspelledWordsLong="$("${SPELL_EXE}" --ispell-dictionary=british ${BRITISH_TXT} | xargs)"
+    local misspelledWordsShort="$(${SPELL_EXE} -D british ${BRITISH_TXT})"
+    ((returnCode += $?))
 
-    [[ "${misspelledWordsShort}" != "${misspelledWordsLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${misspelledWordsShort}, long: ${misspelledWordsLong}"
-        
+    local misspelledWordsLong="$(${SPELL_EXE} --ispell-dictionary=british ${BRITISH_TXT})"
+    ((returnCode += $?))
+
+    VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+
     local expectedMisspelledWords=0
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -201,44 +270,47 @@ TEST_CASES["T009"]="testCorrectWordsInSpecifiedNamedDictionary"
 function testIncorrectWordsInSpecifiedNamedDictionary() {
     local returnCode=0
 
-    local misspelledWordsShort="$("${SPELL_EXE}" -D british ${AMERICAN_TXT} | xargs)"
-    local misspelledWordsLong="$("${SPELL_EXE}" --ispell-dictionary=british ${AMERICAN_TXT} | xargs)"
+    local misspelledWordsShort="$(${SPELL_EXE} -D british ${AMERICAN_TXT})"
+    ((returnCode += $?))
 
-    [[ "${misspelledWordsShort}" != "${misspelledWordsLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${misspelledWordsShort}, long: ${misspelledWordsLong}"
-        
+    local misspelledWordsLong="$(${SPELL_EXE} --ispell-dictionary=british ${AMERICAN_TXT})"
+    ((returnCode += $?))
+
+    VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
 TEST_CASES["T010"]="testIncorrectWordsInSpecifiedNamedDictionary"
 
-
 # T011
 function testUseDifferentProgram() {
     local returnCode=0
 
-    local misspelledWordsShort="$("${SPELL_EXE}" -i echo echo_pgm_test)"
-    local misspelledWordsLong="$("${SPELL_EXE}" --ispell=echo echo_pgm_test)"
+    local misspelledWordsShort="$(${SPELL_EXE} -i echo echo_pgm_test)"
+    ((returnCode += $?))
 
-    [[ "${misspelledWordsShort}" != "${misspelledWordsLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${misspelledWordsShort}, long: ${misspelledWordsLong}"
-        
+    local misspelledWordsLong="$(${SPELL_EXE} --ispell=echo echo_pgm_test)"
+    ((returnCode += $?))
+
+    VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
 
-    if [[ ${actualMisspelledWords} -ne ${expectedMisspelledWords} ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected ${expectedMisspelledWords} misspelled words, actual ${actualMisspelledWords}: ${misspelledWords}"
-    fi
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -248,18 +320,18 @@ function testUseDifferentProgram() {
 function testVerifyLineNumbers() {
     local returnCode=0
 
-    local expected="$(cat ${LINENUM_TXT} | xargs)"
-    local actualShort="$("${SPELL_EXE}" -n ${MADEUP_TXT} | xargs)"
-    local actualLong="$("${SPELL_EXE}" --number ${MADEUP_TXT} | xargs)"
+    local expected="$(cat ${LINENUM_TXT})"
+    local actualShort="$(${SPELL_EXE} -n ${MADEUP_TXT})"
+    ((returnCode += $?))
 
-    [[ "${actualShort}" != "${actualLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${actualShort}, long: ${actualLong}"
+    local actualLong="$(${SPELL_EXE} --number ${MADEUP_TXT})"
+    ((returnCode += $?))
 
-    if [[ "${actualShort}" != "${expected}" ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected: ${expected}, actual: ${actualShort}: ${actualShort}"
-    fi
+    VerifyLongAndShort "${actualLong}" "${actualShort}"
+    ((returnCode += $?))
+
+    VerifyExpectedVsActualStrings "${expected}" "${actualShort}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }
@@ -269,18 +341,18 @@ TEST_CASES["T012"]="testVerifyLineNumbers"
 function testVerifyFileNames() {
     local returnCode=0
 
-    local expected="$(cat ${FILENAME_TXT} | xargs)"
-    local actualShort="$("${SPELL_EXE}" -o ${RESOURCE_DIR}/madeup-*.txt | xargs)"
-    local actualLong="$("${SPELL_EXE}" --print-file-name ${RESOURCE_DIR}/madeup-*.txt | xargs)"
+    local expected="$(cat ${FILENAME_TXT})"
+    local actualShort="$(${SPELL_EXE} -o ${RESOURCE_DIR}/madeup-*.txt)"
+    ((returnCode += $?))
 
-    [[ "${actualShort}" != "${actualLong}" ]] &&
-        returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${actualShort}, long: ${actualLong}"
+    local actualLong="$(${SPELL_EXE} --print-file-name ${RESOURCE_DIR}/madeup-*.txt)"
+    ((returnCode += $?))
 
-    if [[ "${actualShort}" != "${expected}" ]]; then
-        returnCode=1 &&
-            $ErrMessage "Expected: ${expected}, actual: ${actualShort}: ${actualShort}"
-    fi
+    VerifyLongAndShort "${actualLong}" "${actualShort}"
+    ((returnCode += $?))
+
+    VerifyExpectedVsActualStrings "${expected}" "${actualShort}"
+    ((returnCode += $?))
 
     return ${returnCode}
 }

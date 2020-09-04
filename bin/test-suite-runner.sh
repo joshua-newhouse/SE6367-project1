@@ -13,9 +13,11 @@ WarnMessage='eval echo -e "${YELLOW}$(date +%F\ %T") [WARN] - $(basename $0)/${F
 InfoMessage='eval echo -e "${NC}$(date +%F\ %T) [INFO] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
 
 #Additional logging for tests
+T_BLUE='\033[1;34m'
 T_GREEN='\033[1;32m'
 T_RED='\033[1;31m'
 
+TestingMessage='eval echo -e "${T_BLUE}$(date +%F\ %T) [TESTING] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
 SuccessMessage='eval echo -e "${T_GREEN}$(date +%F\ %T) [SUCCESS] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
 FailureMessage='eval echo -e "${T_RED}$(date +%F\ %T) [FAILURE] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
 
@@ -25,7 +27,7 @@ declare -a FAILED_TEST_CASES
 # Verify command line args
 [[ $# -ne 2 ]] &&
     $ErrMessage "Invalid number of command line arguments" && 
-    echo -e "${NC}usage: $(basename $0) \<test-suite-to-run\> \<path to test program\>\n" \
+    echo -e "${NC}usage: $(basename $0) <test-suite-to-run> <path to test program>\n" \
         "  ex: $(basename $0) spell-test-suite.sh /usr/bin/spell" &&
     exit 1
 
@@ -39,7 +41,7 @@ function Main() {
 
     for testCase in ${!TEST_CASES[@]}; do
         local test="${TEST_CASES[${testCase}]}"
-        $InfoMessage "Running ${testCase}::${test}"
+        $TestingMessage "Running ${testCase}::${test}"
 
         "${test}"
         local rc=$?
@@ -57,7 +59,6 @@ function Main() {
         $ErrMessage "There were failed tests:" &&
         printf '%s\n' "${FAILED_TEST_CASES[@]}" ||
         $InfoMessage "All test cases passed"
-
 
     $InfoMessage "Test runner complete"
     exit ${returnCode}
