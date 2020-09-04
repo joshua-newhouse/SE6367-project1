@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #Test suite runner
-# Pass test suite file as first command line argument
+# arg1: test suite file path
+# arg2: path to program under test
 
 #Logging
 RED='\033[0;31m'
