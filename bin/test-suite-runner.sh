@@ -22,6 +22,15 @@ TestingMessage='eval echo -e "${T_BLUE}$(date +%F\ %T) [TESTING] - $(basename $0
 SuccessMessage='eval echo -e "${T_GREEN}$(date +%F\ %T) [SUCCESS] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
 FailureMessage='eval echo -e "${T_RED}$(date +%F\ %T) [FAILURE] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
 
+LOG_DIR="../logs"
+LOG_FILE="${LOG_DIR}/newhouse-test.output"
+ERR_FILE="${LOG_DIR}/newhouse-test.error"
+
+LOG="tee -a ${LOG_FILE}"
+LOG_ERR="tee -a ${LOG_FILE} ${ERR_FILE}"
+
+mkdir -p "${LOG_DIR}" && rm -f "${LOG_FILE}" "${ERR_FILE}"
+
 declare -A TEST_CASES
 declare -a FAILED_TEST_CASES
 
@@ -42,24 +51,24 @@ function Main() {
 
     for testCase in ${!TEST_CASES[@]}; do
         local test="${TEST_CASES[${testCase}]}"
-        $TestingMessage "Running ${testCase}::${test}"
+        $TestingMessage "Running ${testCase}::${test}" | ${LOG}
 
         "${test}"
         local rc=$?
 
         # Test case result actions
         [[ ${rc} -ne 0 ]] &&
-            $FailureMessage "${testCase}::${test} failed with return code: ${rc}" &&
+            $FailureMessage "${testCase}::${test} failed with return code: ${rc}" | ${LOG_ERR} &&
             FAILED_TEST_CASES+=("${testCase}::${test}") &&
             returnCode=1 ||
-            $SuccessMessage "${testCase}::${test} passed"
+            $SuccessMessage "${testCase}::${test} passed" | ${LOG}
     done
 
     # Final test suite report
     [[ ${returnCode} -ne 0 ]] &&
-        $ErrMessage "There were failed tests:" &&
-        printf '%s\n' "${FAILED_TEST_CASES[@]}" ||
-        $InfoMessage "All test cases passed"
+        $ErrMessage "There were failed tests:" | ${LOG_ERR} &&
+        printf '%s\n' "${FAILED_TEST_CASES[@]}" | ${LOG_ERR} ||
+        $InfoMessage "All test cases passed" | ${LOG}
 
     $InfoMessage "Test runner complete"
     exit ${returnCode}

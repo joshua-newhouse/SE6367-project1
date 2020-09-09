@@ -25,7 +25,7 @@ function VerifyLongAndShort() {
 
     [[ "${shortOutput}" != "${longOutput}" ]] &&
         returnCode=1 &&
-        $ErrMessage "Short option output does not equal long option output, short: ${shortOutput}, long: ${longOutput}"
+        $ErrMessage "Short option output does not equal long option output, short: ${shortOutput}, long: ${longOutput}" | ${LOG_ERR}
 
     return ${returnCode}
 }
@@ -37,7 +37,7 @@ function VerifyNotEmpty() {
     local returnCode=0
 
     if [[ -z "${longOutput}" ]] || [[ -z "${shortOutput}" ]]; then
-        $ErrMessage "One of the outputs is empty"
+        $ErrMessage "One of the outputs is empty" | ${LOG_ERR}
         ((returnCode += $?))
     fi
 
@@ -55,7 +55,7 @@ function VerifyExpectedVsActualCounts() {
 
     [[ ${expected} -ne ${actual} ]] &&
         returnCode=1 &&
-        $ErrMessage "Expected: ${expected} / Actual: ${actual}"
+        $ErrMessage "Expected: ${expected} / Actual: ${actual}" | ${LOG_ERR}
 
     return ${returnCode}
 }
@@ -68,7 +68,7 @@ function VerifyExpectedVsActualStrings() {
 
     [[ "${expected}" != "${actual}" ]] &&
         returnCode=1 &&
-        $ErrMessage "Expected: ${expected} / Actual: ${actual}"
+        $ErrMessage "Expected: ${expected} / Actual: ${actual}" | ${LOG_ERR}
 
     return ${returnCode}
 }
@@ -135,7 +135,7 @@ function testAmericanWordsWithAmericanDictionary() {
     local misspelledWords="$(${SPELL_EXE} ${AMERICAN_TXT})"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=0
     local actualMisspelledWords="$(echo ${misspelledWords} | wc -w)"
@@ -160,7 +160,7 @@ function testAmericanWordsWithBritishDictionary() {
     VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
@@ -179,7 +179,7 @@ function testBritishWordsWithAmericanDictionary() {
     local misspelledWords="$(${SPELL_EXE} ${BRITISH_TXT})"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWords} | wc -w)"
@@ -204,7 +204,7 @@ function testBritishWordsWithBritishDictionary() {
     VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=0
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
@@ -229,7 +229,7 @@ function testMadeUpWordsInSpecifiedDictionary() {
     VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=1
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
@@ -254,7 +254,7 @@ function testCorrectWordsInSpecifiedNamedDictionary() {
     VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=0
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
@@ -279,7 +279,7 @@ function testIncorrectWordsInSpecifiedNamedDictionary() {
     VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
@@ -304,7 +304,7 @@ function testUseDifferentProgram() {
     VerifyLongAndShort "${misspelledWordsLong}" "${misspelledWordsShort}"
     ((returnCode += $?))
 
-    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)"
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWordsShort} | xargs)" | ${LOG}
 
     local expectedMisspelledWords=14
     local actualMisspelledWords="$(echo ${misspelledWordsShort} | wc -w)"
