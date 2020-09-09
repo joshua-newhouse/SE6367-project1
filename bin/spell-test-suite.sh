@@ -358,3 +358,21 @@ function testVerifyFileNames() {
 }
 TEST_CASES["T013"]="testVerifyFileNames"
 
+function testCorrectCapitalizedWords() {
+    local returnCode=0
+
+    local misspelledWords="$(cat ${AMERICAN_TXT} | tr [:lower:] [:upper:] | ${SPELL_EXE})"
+    ((returnCode += $?))
+
+    $InfoMessage "Misspelled Words: $(echo ${misspelledWords} | xargs)" | ${LOG}
+
+    local expectedMisspelledWords=0
+    local actualMisspelledWords="$(echo ${misspelledWords} | wc -w)"
+
+    VerifyExpectedVsActualCounts "${expectedMisspelledWords}" "${actualMisspelledWords}"
+    ((returnCode += $?))
+
+    return ${returnCode}
+}
+TEST_CASES["T014"]="testCorrectCapitalizedWords"
+
