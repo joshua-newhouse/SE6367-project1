@@ -4,28 +4,57 @@
 # arg1: test suite file path
 # arg2: path to program under test
 
-#Logging
-RED='\033[0;31m'
-YELLOW='\033[0;33m'
-NC='\033[0m'
+NO_COLOR='\033[0m'
 
-ErrMessage='eval echo -e "${RED}$(date +%F\ %T) [ERROR] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
-WarnMessage='eval echo -e "${YELLOW}$(date +%F\ %T") [WARN] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
-InfoMessage='eval echo -e "${NC}$(date +%F\ %T) [INFO] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
+function Log() {
+    local lineID="${1}"
+    local msg="${2}"
+    local type="${3}"
+    local color="${4}"
 
-#Additional logging for tests
-T_BLUE='\033[1;34m'
-T_GREEN='\033[1;32m'
-T_RED='\033[1;31m'
+    echo -e "${color}$(date +%F\ %T) [${type}] ${lineID}" "${msg}" "${NO_COLOR}"
+}
 
-TestingMessage='eval echo -e "${T_BLUE}$(date +%F\ %T) [TESTING] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
-SuccessMessage='eval echo -e "${T_GREEN}$(date +%F\ %T) [SUCCESS] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
-FailureMessage='eval echo -e "${T_RED}$(date +%F\ %T) [FAILURE] - $(basename $0)/${FUNCNAME[0]},${LINENO[0]}: "'
+function LogErr() {
+    Log "${1}" "${*:2}" "ERROR" '\033[1;31m'
+}
+export -f LogErr
+ErrMessage='eval LogErr "$(echo -e "$(basename $0)/${FUNCNAME[0]}/$LINENO")"'
+
+function LogWarn() {
+    Log "${1}" "${*:2}" "WARNING" '\033[1;33m'
+}
+export -f LogWarn
+WarnMessage='eval LogWarn "$(echo -e "$(basename $0)/${FUNCNAME[0]}/$LINENO")"'
+
+function LogInfo() {
+    Log "${1}" "${*:2}" "INFO" '\033[1;34m'
+}
+export -f LogInfo
+InfoMessage='eval LogInfo "$(echo -e "$(basename $0)/${FUNCNAME[0]}/$LINENO")"'
+
+function LogTesting() {
+    Log "${1}" "${*:2}" "TESTING" '\033[1;36m'
+}
+export -f LogTesting
+TestingMessage='eval LogTesting "$(echo -e "$(basename $0)/${FUNCNAME[0]}/$LINENO")"'
+
+function LogSuccess() {
+    Log "${1}" "${*:2}" "SUCCESS" '\033[1;32m'
+}
+export -f LogSuccess
+SuccessMessage='eval LogSuccess "$(echo -e "$(basename $0)/${FUNCNAME[0]}/$LINENO")"'
+
+function LogFailure() {
+    Log "${1}" "${*:2}" "FAILURE" '\033[1;91m'
+}
+export -f LogFailure
+FailureMessage='eval LogFailure "$(echo -e "$(basename $0)/${FUNCNAME[0]}/$LINENO")"'
+
 
 LOG_DIR="../logs"
 LOG_FILE="${LOG_DIR}/newhouse-test.output"
 ERR_FILE="${LOG_DIR}/newhouse-test.error"
-
 LOG="tee -a ${LOG_FILE}"
 LOG_ERR="tee -a ${LOG_FILE} ${ERR_FILE}"
 
@@ -49,7 +78,11 @@ source "${TEST_SUITE}"
 function Main() {
     local returnCode=0
 
-    for testCase in ${!TEST_CASES[@]}; do
+    IFS=$'\n'
+    local sortedTestCases=( $(sort <<< "${!TEST_CASES[*]}") )
+    unset IFS
+
+    for testCase in ${sortedTestCases[@]}; do
         local test="${TEST_CASES[${testCase}]}"
         $TestingMessage "Running ${testCase}::${test}" | ${LOG}
 
@@ -68,7 +101,7 @@ function Main() {
     [[ ${returnCode} -ne 0 ]] &&
         $ErrMessage "There were failed tests:" | ${LOG_ERR} &&
         printf '%s\n' "${FAILED_TEST_CASES[@]}" | ${LOG_ERR} ||
-        $InfoMessage "All test cases passed" | ${LOG}
+        $SuccessMessage "All test cases passed" | ${LOG}
 
     $InfoMessage "Test runner complete"
     exit ${returnCode}
